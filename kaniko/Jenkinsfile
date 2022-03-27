@@ -17,8 +17,8 @@ pipeline {
         container('kaniko') {
           script {
             sh '''
-            /kaniko/executor --dockerfile `pwd`/Dockerfile \
-                             --context `pwd` \
+            /kaniko/executor --dockerfile `pwd`/kaniko/Dockerfile \
+                             --context `pwd` /kaniko \
                              --destination=akloud.jfrog.io/myweb/myweb:${BUILD_NUMBER}
             '''
           }
@@ -30,8 +30,8 @@ pipeline {
       steps {
         container('kubectl') {
           withCredentials([file(credentialsId: 'mykubeconfig', variable: 'KUBECONFIG')]) {
-            sh 'sed -i "s/<TAG>/${BUILD_NUMBER}/" myweb.yaml'
-            sh 'kubectl apply -f myweb.yaml'
+            sh 'sed -i "s/<TAG>/${BUILD_NUMBER}/" kaniko/myweb.yaml'
+            sh 'kubectl apply -f kaniko/myweb.yaml'
           }
         }
       }
