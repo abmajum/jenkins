@@ -26,7 +26,8 @@ spec:
       - image: akloud.jfrog.io/myweb/myweb:<TAG>
         imagePullPolicy: Always
         name: myweb
-
+      imagePullSecrets:
+      - name: regcred
 ---
 apiVersion: v1
 kind: Service
