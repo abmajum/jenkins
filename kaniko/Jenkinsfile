@@ -18,7 +18,7 @@ pipeline {
           script {
             sh '''
             /kaniko/executor --dockerfile `pwd`/kaniko/Dockerfile \
-                             --context `pwd` /kaniko \
+                             --context `pwd`/kaniko \
                              --destination=akloud.jfrog.io/myweb/myweb:${BUILD_NUMBER}
             '''
           }
