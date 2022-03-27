@@ -23,7 +23,7 @@ spec:
         app: myweb
     spec:
       containers:
-      - image: akloud.jfrog.io/myweb/myweb:<DOCKER_TAG>
+      - image: akloud.jfrog.io/myweb/myweb:<TAG>
         imagePullPolicy: Always
         name: myweb
 
