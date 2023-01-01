@@ -1,0 +1,49 @@
+pipeline {
+  agent any
+  stages {
+    stage('Git checkout') {
+      steps {
+        checkout([$class: 'GitSCM', 
+                 branches: [[name: '*/master']], 
+                 extensions: [], 
+                 userRemoteConfigs: [[credentialsId: 'bitbucket', 
+                 url: 'https://abhisheksuffescom@bitbucket.org/abhisheksuffescom/pipeline_project2.git']]])
+      }
+    }
+
+    stage('Build ,Tag Image, package') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'myjfg_docker_creds', passwordVariable: 'dockerpassword', usernameVariable: 'dockerusername')]) {
+    // some block
+        sh 'docker login jenkinssuffes.jfrog.io -u ${dockerusername} -p ${dockerpassword}'
+        sh 'docker build -t myapp:${BUILD_NUMBER} .'
+        sh 'docker tag myapp:${BUILD_NUMBER} myapp:latest'
+        sh 'docker tag myapp:${BUILD_NUMBER}  jenkinssuffes.jfrog.io/mydocker/myapp:${BUILD_NUMBER}'
+        sh 'docker tag myapp:latest  jenkinssuffes.jfrog.io/mydocker/myapp:latest'
+        sh 'helm package helm-chart-myapp/  --app-version 1.0.${BUILD_NUMBER} -d helm-chart-myapp/'
+       }
+      }
+    }
+
+    stage('Publish Artifact and Helm Package') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'jfg_helm_creds', passwordVariable: 'helm_pass', usernameVariable: 'helm_user')]) {
+    // some block
+        sh 'docker push jenkinssuffes.jfrog.io/mydocker/myapp:latest'
+        sh 'docker push jenkinssuffes.jfrog.io/mydocker/myapp:${BUILD_NUMBER}'
+        sh 'curl -u ${helm_user}:${helm_pass} -T  helm-chart-myapp/helm-chart-myapp-0.1.0.tgz https://jenkinssuffes.jfrog.io/artifactory/my_repo/helm-chart-myapp-0.1.0.tgz'
+        }
+       }
+  }
+    stage('Deploy to K8S') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'jfg_helm_creds', passwordVariable: 'helm_pass', usernameVariable: 'helm_user'), file(credentialsId: 'myConfig_file', variable: 'config')]) {
+    // some block
+        sh 'helm repo add suffes_helm https://jenkinssuffes.jfrog.io/artifactory/api/helm/suffes_helm --username ${helm_user} --password ${helm_pass}'
+        sh 'helm repo update suffes_helm'
+        sh 'helm upgrade --install myapp suffes_helm/helm-chart-myapp -n jenkins --kubeconfig=${config}'
+        }
+      }
+   }
+  }
+}
